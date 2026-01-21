@@ -1,3 +1,4 @@
+// path_size.go
 package code
 
 import (
@@ -120,22 +121,20 @@ func FormatSizeBytes(size int64, human bool) string {
 		return fmt.Sprintf("%dB", size)
 	}
 
-	if size == 0 {
-		return "0B"
+	if size < 1024 {
+		return fmt.Sprintf("%dB", size)
 	}
 
-	units := NewUnits()
+	units := []string{"KB", "MB", "GB", "TB", "PB", "EB"}
 
 	exp := int(math.Log(float64(size)) / math.Log(1024))
-	if exp >= len(units) {
-		exp = len(units) - 1
+	if exp > len(units) {
+		exp = len(units)
+	}
+	if exp > 0 {
+		exp = exp - 1
 	}
 
-	value := float64(size) / math.Pow(1024, float64(exp))
-	formatted := fmt.Sprintf("%.1f", value)
-	if len(formatted) >= 2 && formatted[len(formatted)-2:] == ".0" {
-		formatted = formatted[:len(formatted)-2]
-	}
-
-	return formatted + units[exp]
+	value := float64(size) / math.Pow(1024, float64(exp+1))
+	return fmt.Sprintf("%.1f%s", value, units[exp])
 }

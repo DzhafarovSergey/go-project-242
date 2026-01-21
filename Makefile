@@ -4,10 +4,10 @@ build:
 	go build -o bin/hexlet-path-size ./cmd/hexlet-path-size
 
 test:
-	go test -v ./...
+	go test -v .
 
 test-coverage:
-	go test -coverprofile=coverage.out ./...
+	go test -coverprofile=coverage.out .
 	go tool cover -html=coverage.out
 
 lint:
@@ -17,9 +17,9 @@ run-example:
 	./bin/hexlet-path-size data.csv
 
 run-test-example:
-	./bin/hexlet-path-size tests/fixtures/testdata/data/ndata.csv
-	./bin/hexlet-path-size -h tests/fixtures/testdata/data/ndata.csv
-	./bin/hexlet-path-size -a tests/fixtures/testdata/data/
+	./bin/hexlet-path-size data.csv
+	./bin/hexlet-path-size -h data.csv
+	./bin/hexlet-path-size -a .
 
 clean:
 	rm -rf bin/ coverage.out
