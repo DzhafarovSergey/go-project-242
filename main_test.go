@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGetPathSizeFile(t *testing.T) {
+func TestGetSizeFile(t *testing.T) {
 	tmpfile, err := os.CreateTemp("", "testfile")
 	require.NoError(t, err)
 	defer os.Remove(tmpfile.Name())
@@ -22,14 +22,14 @@ func TestGetPathSizeFile(t *testing.T) {
 	err = tmpfile.Close()
 	require.NoError(t, err)
 
-	result, err := GetPathSize(tmpfile.Name(), false, false, false)
+	result, err := GetSize(tmpfile.Name(), false, false, false)
 	require.NoError(t, err)
 
 	expected := "13B\t" + tmpfile.Name()
 	assert.Equal(t, expected, result)
 }
 
-func TestGetPathSizeDirectory(t *testing.T) {
+func TestGetSizeDirectory(t *testing.T) {
 	tmpdir, err := os.MkdirTemp("", "testdir")
 	require.NoError(t, err)
 	defer os.RemoveAll(tmpdir)
@@ -43,15 +43,15 @@ func TestGetPathSizeDirectory(t *testing.T) {
 	err = os.WriteFile(file2, []byte("67890"), 0644)
 	require.NoError(t, err)
 
-	result, err := GetPathSize(tmpdir, false, false, false)
+	result, err := GetSize(tmpdir, false, false, false)
 	require.NoError(t, err)
 
 	expected := "10B\t" + tmpdir
 	assert.Equal(t, expected, result)
 }
 
-func TestGetPathSizeNonExistentPath(t *testing.T) {
-	result, err := GetPathSize("/non/existent/path", false, false, false)
+func TestGetSizeNonExistentPath(t *testing.T) {
+	result, err := GetSize("/non/existent/path", false, false, false)
 
 	assert.Error(t, err)
 	assert.Empty(t, result)
@@ -90,7 +90,7 @@ func TestFormatSizeBytes(t *testing.T) {
 	}
 }
 
-func TestGetPathSizeWithHumanFlag(t *testing.T) {
+func TestGetSizeWithHumanFlag(t *testing.T) {
 	tmpfile, err := os.CreateTemp("", "testfile")
 	require.NoError(t, err)
 	defer os.Remove(tmpfile.Name())
@@ -103,18 +103,18 @@ func TestGetPathSizeWithHumanFlag(t *testing.T) {
 	err = tmpfile.Close()
 	require.NoError(t, err)
 
-	result, err := GetPathSize(tmpfile.Name(), false, false, false)
+	result, err := GetSize(tmpfile.Name(), false, false, false)
 	require.NoError(t, err)
 	expected := fmt.Sprintf("%dB\t%s", size, tmpfile.Name())
 	assert.Equal(t, expected, result)
 
-	result, err = GetPathSize(tmpfile.Name(), false, true, false)
+	result, err = GetSize(tmpfile.Name(), false, true, false)
 	require.NoError(t, err)
 	expected = fmt.Sprintf("24MB\t%s", tmpfile.Name())
 	assert.Equal(t, expected, result)
 }
 
-func TestGetPathSizeSmallFileHuman(t *testing.T) {
+func TestGetSizeSmallFileHuman(t *testing.T) {
 	tmpfile, err := os.CreateTemp("", "testfile")
 	require.NoError(t, err)
 	defer os.Remove(tmpfile.Name())
@@ -127,16 +127,16 @@ func TestGetPathSizeSmallFileHuman(t *testing.T) {
 	err = tmpfile.Close()
 	require.NoError(t, err)
 
-	result, err := GetPathSize(tmpfile.Name(), false, false, false)
+	result, err := GetSize(tmpfile.Name(), false, false, false)
 	require.NoError(t, err)
 	assert.Equal(t, fmt.Sprintf("%dB\t%s", size, tmpfile.Name()), result)
 
-	result, err = GetPathSize(tmpfile.Name(), false, true, false)
+	result, err = GetSize(tmpfile.Name(), false, true, false)
 	require.NoError(t, err)
 	assert.Equal(t, fmt.Sprintf("24MB\t%s", tmpfile.Name()), result)
 }
 
-func TestGetPathSizeWithHiddenFiles(t *testing.T) {
+func TestGetSizeWithHiddenFiles(t *testing.T) {
 	tmpdir, err := os.MkdirTemp("", "testdir-hidden")
 	require.NoError(t, err)
 	defer os.RemoveAll(tmpdir)
@@ -168,18 +168,18 @@ func TestGetPathSizeWithHiddenFiles(t *testing.T) {
 	err = os.WriteFile(fileInHiddenDir, []byte("inhidden"), 0644)
 	require.NoError(t, err)
 
-	result, err := GetPathSize(tmpdir, false, false, false)
+	result, err := GetSize(tmpdir, false, false, false)
 	require.NoError(t, err)
 	expected := "10B\t" + tmpdir
 	assert.Equal(t, expected, result)
 
-	result, err = GetPathSize(tmpdir, false, false, true)
+	result, err = GetSize(tmpdir, false, false, true)
 	require.NoError(t, err)
 	expected = "24B\t" + tmpdir
 	assert.Equal(t, expected, result)
 }
 
-func TestGetPathSizeHiddenFileDirectly(t *testing.T) {
+func TestGetSizeHiddenFileDirectly(t *testing.T) {
 	tmpfile, err := os.CreateTemp("", ".hiddenfile")
 	require.NoError(t, err)
 	defer os.Remove(tmpfile.Name())
@@ -190,11 +190,11 @@ func TestGetPathSizeHiddenFileDirectly(t *testing.T) {
 	err = tmpfile.Close()
 	require.NoError(t, err)
 
-	result, err := GetPathSize(tmpfile.Name(), false, false, false)
+	result, err := GetSize(tmpfile.Name(), false, false, false)
 	require.NoError(t, err)
 	assert.Equal(t, "", result)
 
-	result, err = GetPathSize(tmpfile.Name(), false, false, true)
+	result, err = GetSize(tmpfile.Name(), false, false, true)
 	require.NoError(t, err)
 	expected := fmt.Sprintf("%dB\t%s", len(content), tmpfile.Name())
 	assert.Equal(t, expected, result)
@@ -239,7 +239,7 @@ func TestIsHiddenFunction(t *testing.T) {
 	}
 }
 
-func TestGetPathSizeCombinedFlags(t *testing.T) {
+func TestGetSizeCombinedFlags(t *testing.T) {
 	tmpdir, err := os.MkdirTemp("", "testdir-combined")
 	require.NoError(t, err)
 	defer os.RemoveAll(tmpdir)
@@ -256,28 +256,28 @@ func TestGetPathSizeCombinedFlags(t *testing.T) {
 	err = os.WriteFile(hiddenFile, make([]byte, hiddenSize), 0644)
 	require.NoError(t, err)
 
-	result, err := GetPathSize(tmpdir, false, false, false)
+	result, err := GetSize(tmpdir, false, false, false)
 	require.NoError(t, err)
 	expected := fmt.Sprintf("%dB\t%s", normalSize, tmpdir)
 	assert.Equal(t, expected, result)
 
-	result, err = GetPathSize(tmpdir, false, true, false)
+	result, err = GetSize(tmpdir, false, true, false)
 	require.NoError(t, err)
 	expected = fmt.Sprintf("1.5KB\t%s", tmpdir)
 	assert.Equal(t, expected, result)
 
-	result, err = GetPathSize(tmpdir, false, false, true)
+	result, err = GetSize(tmpdir, false, false, true)
 	require.NoError(t, err)
 	expected = fmt.Sprintf("%dB\t%s", normalSize+hiddenSize, tmpdir)
 	assert.Equal(t, expected, result)
 
-	result, err = GetPathSize(tmpdir, false, true, true)
+	result, err = GetSize(tmpdir, false, true, true)
 	require.NoError(t, err)
 	expected = fmt.Sprintf("2KB\t%s", tmpdir)
 	assert.Equal(t, expected, result)
 }
 
-func TestGetPathSizeRecursive(t *testing.T) {
+func TestGetSizeRecursive(t *testing.T) {
 	tmpdir, err := os.MkdirTemp("", "testdir-recursive")
 	require.NoError(t, err)
 	defer os.RemoveAll(tmpdir)
@@ -305,15 +305,15 @@ func TestGetPathSizeRecursive(t *testing.T) {
 	err = os.WriteFile(file4, []byte("12345678901234567890"), 0644)
 	require.NoError(t, err)
 
-	result, err := GetPathSize(tmpdir, false, false, false)
+	result, err := GetSize(tmpdir, false, false, false)
 	require.NoError(t, err)
 	assert.Equal(t, "5B\t"+tmpdir, result)
 
-	result, err = GetPathSize(tmpdir, true, false, false)
+	result, err = GetSize(tmpdir, true, false, false)
 	require.NoError(t, err)
 	assert.Equal(t, "50B\t"+tmpdir, result)
 
-	result, err = GetPathSize(tmpdir, true, true, false)
+	result, err = GetSize(tmpdir, true, true, false)
 	require.NoError(t, err)
 	assert.Equal(t, "50B\t"+tmpdir, result)
 
@@ -322,12 +322,12 @@ func TestGetPathSizeRecursive(t *testing.T) {
 	err = os.WriteFile(largeFile, largeContent, 0644)
 	require.NoError(t, err)
 
-	result, err = GetPathSize(tmpdir, true, true, false)
+	result, err = GetSize(tmpdir, true, true, false)
 	require.NoError(t, err)
 	assert.Equal(t, "2KB\t"+tmpdir, result)
 }
 
-func TestGetPathSizeRecursiveWithHidden(t *testing.T) {
+func TestGetSizeRecursiveWithHidden(t *testing.T) {
 	tmpdir, err := os.MkdirTemp("", "testdir-recursive-hidden")
 	require.NoError(t, err)
 	defer os.RemoveAll(tmpdir)
@@ -356,20 +356,20 @@ func TestGetPathSizeRecursiveWithHidden(t *testing.T) {
 	err = os.WriteFile(hiddenInSubdir, make([]byte, 25), 0644)
 	require.NoError(t, err)
 
-	result, err := GetPathSize(tmpdir, true, false, false)
+	result, err := GetSize(tmpdir, true, false, false)
 	require.NoError(t, err)
 	assert.Equal(t, "25B\t"+tmpdir, result)
 
-	result, err = GetPathSize(tmpdir, true, false, true)
+	result, err = GetSize(tmpdir, true, false, true)
 	require.NoError(t, err)
 	assert.Equal(t, "75B\t"+tmpdir, result)
 
-	result, err = GetPathSize(tmpdir, false, false, true)
+	result, err = GetSize(tmpdir, false, false, true)
 	require.NoError(t, err)
 	assert.Equal(t, "15B\t"+tmpdir, result)
 }
 
-func TestGetPathSizeRecursiveSkipHiddenDirs(t *testing.T) {
+func TestGetSizeRecursiveSkipHiddenDirs(t *testing.T) {
 	tmpdir, err := os.MkdirTemp("", "testdir-skip-hidden")
 	require.NoError(t, err)
 	defer os.RemoveAll(tmpdir)
@@ -397,17 +397,17 @@ func TestGetPathSizeRecursiveSkipHiddenDirs(t *testing.T) {
 	err = os.WriteFile(file3, make([]byte, 20), 0644)
 	require.NoError(t, err)
 
-	result, err := GetPathSize(tmpdir, true, false, false)
+	result, err := GetSize(tmpdir, true, false, false)
 	require.NoError(t, err)
 	assert.Equal(t, "25B\t"+tmpdir, result)
 }
 
-func TestGetPathSizeEdgeCases(t *testing.T) {
+func TestGetSizeEdgeCases(t *testing.T) {
 	tmpdir, err := os.MkdirTemp("", "testdir-empty")
 	require.NoError(t, err)
 	defer os.RemoveAll(tmpdir)
 
-	result, err := GetPathSize(tmpdir, true, false, false)
+	result, err := GetSize(tmpdir, true, false, false)
 	require.NoError(t, err)
 	assert.Equal(t, "0B\t"+tmpdir, result)
 
@@ -415,11 +415,11 @@ func TestGetPathSizeEdgeCases(t *testing.T) {
 	err = os.WriteFile(hiddenFile, []byte("test"), 0644)
 	require.NoError(t, err)
 
-	result, err = GetPathSize(tmpdir, true, false, false)
+	result, err = GetSize(tmpdir, true, false, false)
 	require.NoError(t, err)
 	assert.Equal(t, "0B\t"+tmpdir, result)
 
-	result, err = GetPathSize(tmpdir, true, false, true)
+	result, err = GetSize(tmpdir, true, false, true)
 	require.NoError(t, err)
 	assert.Equal(t, "4B\t"+tmpdir, result)
 }

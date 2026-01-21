@@ -33,28 +33,6 @@ func GetSize(path string, recursive, human, all bool) (string, error) {
 	return FormatSizeBytes(size, true), nil
 }
 
-func GetPathSize(path string, recursive, human, all bool) (string, error) {
-	info, err := os.Lstat(path)
-	if err != nil {
-		return "", err
-	}
-
-	var size int64
-	if info.IsDir() {
-		size, err = getDirSize(path, recursive, all)
-		if err != nil {
-			return "", err
-		}
-	} else {
-		if !all && isHidden(path) {
-			return "", nil
-		}
-		size = info.Size()
-	}
-
-	return FormatSize(size, path, human), nil
-}
-
 func getDirSize(path string, recursive, all bool) (int64, error) {
 	var totalSize int64
 

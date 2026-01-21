@@ -47,7 +47,7 @@ func Run() {
 	all := *allFlag || *shortAllFlag
 	recursive := *recursiveFlag || *shortRecursiveFlag
 
-	result, err := code.GetPathSize(path, recursive, human, all)
+	result, err := code.GetSize(path, recursive, human, all)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
