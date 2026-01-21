@@ -1,5 +1,4 @@
-// Файл: internal/pathsize/pathsize.go
-package pathsize
+package code
 
 import (
 	"fmt"
@@ -7,8 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	"code/internal/constants"
 )
 
 func GetPathSize(path string, recursive, human, all bool) (string, error) {
@@ -124,7 +121,7 @@ func FormatSizeBytes(size int64, human bool) string {
 		return "0B"
 	}
 
-	units := constants.NewUnits()
+	units := NewUnits()
 
 	exp := int(math.Log(float64(size)) / math.Log(1024))
 	if exp >= len(units) {

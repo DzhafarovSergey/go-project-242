@@ -1,21 +1,25 @@
-.PHONY: build test lint
+.PHONY: build test lint clean
 
 build:
 	go build -o bin/hexlet-path-size ./cmd/hexlet-path-size
 
 test:
-	go test ./tests/...
+	go test -v ./...
 
 test-coverage:
-	go test -coverprofile=coverage.out ./tests/...
+	go test -coverprofile=coverage.out ./...
 	go tool cover -html=coverage.out
 
 lint:
 	golangci-lint run
 
-
 run-example:
 	./bin/hexlet-path-size data.csv
+
+run-test-example:
+	./bin/hexlet-path-size tests/fixtures/testdata/data/ndata.csv
+	./bin/hexlet-path-size -h tests/fixtures/testdata/data/ndata.csv
+	./bin/hexlet-path-size -a tests/fixtures/testdata/data/
 
 clean:
 	rm -rf bin/ coverage.out
