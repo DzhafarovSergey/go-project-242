@@ -17,7 +17,7 @@ func TestGetPathSize_File(t *testing.T) {
 
 	result, err := GetPathSize(filePath, false, false, false)
 	require.NoError(t, err)
-	expected := fmt.Sprintf("%dB\t%s", len(content), filePath)
+	expected := fmt.Sprintf("%dB", len(content))
 	require.Equal(t, expected, result)
 }
 
@@ -31,8 +31,7 @@ func TestGetPathSize_Directory(t *testing.T) {
 
 	result, err := GetPathSize(tempDir, false, false, false)
 	require.NoError(t, err)
-	require.Contains(t, result, "16B")
-	require.Contains(t, result, tempDir)
+	require.Equal(t, "16B", result)
 }
 
 func TestGetPathSize_Recursive(t *testing.T) {
@@ -48,11 +47,11 @@ func TestGetPathSize_Recursive(t *testing.T) {
 
 	result1, err := GetPathSize(tempDir, false, false, false)
 	require.NoError(t, err)
-	require.Contains(t, result1, "5B")
+	require.Equal(t, "5B", result1)
 
 	result2, err := GetPathSize(tempDir, true, false, false)
 	require.NoError(t, err)
-	require.Contains(t, result2, "10B")
+	require.Equal(t, "10B", result2)
 }
 
 func TestGetPathSize_HiddenFiles(t *testing.T) {
@@ -65,11 +64,11 @@ func TestGetPathSize_HiddenFiles(t *testing.T) {
 
 	result1, err := GetPathSize(tempDir, false, false, false)
 	require.NoError(t, err)
-	require.Contains(t, result1, "6B")
+	require.Equal(t, "6B", result1)
 
 	result2, err := GetPathSize(tempDir, false, false, true)
 	require.NoError(t, err)
-	require.Contains(t, result2, "12B")
+	require.Equal(t, "12B", result2)
 }
 
 func TestGetPathSize_HumanReadable(t *testing.T) {
@@ -84,11 +83,11 @@ func TestGetPathSize_HumanReadable(t *testing.T) {
 
 	result1, err := GetPathSize(filePath, false, false, false)
 	require.NoError(t, err)
-	require.Contains(t, result1, "1536B")
+	require.Equal(t, "1536B", result1)
 
 	result2, err := GetPathSize(filePath, false, true, false)
 	require.NoError(t, err)
-	require.Contains(t, result2, "1.5KB")
+	require.Equal(t, "1.5KB", result2)
 }
 
 func TestFormatSize(t *testing.T) {
@@ -99,18 +98,21 @@ func TestFormatSize(t *testing.T) {
 	}{
 		{123, false, "123B"},
 		{123, true, "123B"},
-		{1024, true, "1KB"},
+		{1024, true, "1.0KB"},
 		{1536, true, "1.5KB"},
-		{2048, true, "2KB"},
+		{2048, true, "2.0KB"},
 		{1234567, true, "1.2MB"},
-		{1048576, true, "1MB"},
-		{1073741824, true, "1GB"},
+		{1048576, true, "1.0MB"},
+		{1073741824, true, "1.0GB"},
 		{0, true, "0B"},
 		{999, true, "999B"},
 		{1000, true, "1000B"},
 		{1023, true, "1023B"},
 		{1024*1024 - 1, true, "1024KB"},
 		{1024*1024*1024 - 1, true, "1024MB"},
+		{1500000, true, "1.4MB"},
+		{999999, true, "977KB"},
+		{1500, true, "1.5KB"},
 	}
 
 	for _, tc := range testCases {
@@ -136,23 +138,35 @@ func TestGetPathSize_ComplexStructure(t *testing.T) {
 
 	result1, err := GetPathSize(tempDir, false, false, false)
 	require.NoError(t, err)
-	require.Contains(t, result1, "10B")
+	require.Equal(t, "10B", result1)
 
 	result2, err := GetPathSize(tempDir, true, false, false)
 	require.NoError(t, err)
-	require.Contains(t, result2, "45B")
+	require.Equal(t, "45B", result2)
 
 	result3, err := GetPathSize(tempDir, true, false, true)
 	require.NoError(t, err)
-	require.Contains(t, result3, "57B")
+	require.Equal(t, "57B", result3)
 
 	result4, err := GetPathSize(tempDir, true, true, true)
 	require.NoError(t, err)
-	require.Contains(t, result4, "57B")
+	require.Equal(t, "57B", result4)
 }
 
 func TestGetPathSize_NonExistentPath(t *testing.T) {
 	_, err := GetPathSize("/non/existent/path", false, false, false)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "no such file")
+}
+
+func TestGetPathSizeWithPath(t *testing.T) {
+	tempDir := t.TempDir()
+	filePath := filepath.Join(tempDir, "test.txt")
+	content := []byte("test")
+	os.WriteFile(filePath, content, 0644)
+
+	result, err := GetPathSizeWithPath(filePath, false, false, false)
+	require.NoError(t, err)
+	expected := fmt.Sprintf("%dB\t%s", len(content), filePath)
+	require.Equal(t, expected, result)
 }

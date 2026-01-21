@@ -13,13 +13,17 @@ func GetPathSize(path string, recursive, human, all bool) (string, error) {
 		return "", err
 	}
 
-	var sizeStr string
 	if human {
-		sizeStr = FormatSize(size, human)
-	} else {
-		sizeStr = fmt.Sprintf("%dB", size)
+		return FormatSize(size, true), nil
 	}
+	return fmt.Sprintf("%dB", size), nil
+}
 
+func GetPathSizeWithPath(path string, recursive, human, all bool) (string, error) {
+	sizeStr, err := GetPathSize(path, recursive, human, all)
+	if err != nil {
+		return "", err
+	}
 	return fmt.Sprintf("%s\t%s", sizeStr, path), nil
 }
 
@@ -86,11 +90,12 @@ func FormatSize(size int64, human bool) string {
 
 	if exp == 0 {
 		return fmt.Sprintf("%d%s", size, units[exp])
-	} else if value == math.Trunc(value) {
-		return fmt.Sprintf("%.0f%s", value, units[exp])
-	} else if value < 10 {
-		return fmt.Sprintf("%.1f%s", value, units[exp])
-	} else {
-		return fmt.Sprintf("%.0f%s", math.Round(value), units[exp])
 	}
+	if value == math.Trunc(value) {
+		return fmt.Sprintf("%.1f%s", value, units[exp])
+	}
+	if value < 10 {
+		return fmt.Sprintf("%.1f%s", value, units[exp])
+	}
+	return fmt.Sprintf("%.0f%s", math.Round(value), units[exp])
 }

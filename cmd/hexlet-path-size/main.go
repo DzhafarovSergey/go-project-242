@@ -1,64 +1,61 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-	"log"
 	"os"
 
 	"code"
-
-	"github.com/urfave/cli/v2"
 )
 
 func main() {
-	app := &cli.App{
-		Name:  "hexlet-path-size",
-		Usage: "print size of a file or directory; supports -r (recursive), -H (human-readable), -a (include hidden)",
-		Flags: []cli.Flag{
-			&cli.BoolFlag{
-				Name:    "recursive",
-				Aliases: []string{"r"},
-				Usage:   "recursive size of directories",
-			},
-			&cli.BoolFlag{
-				Name:    "human",
-				Aliases: []string{"H"},
-				Usage:   "human-readable sizes (auto-select unit)",
-			},
-			&cli.BoolFlag{
-				Name:    "all",
-				Aliases: []string{"a"},
-				Usage:   "include hidden files and directories",
-			},
-		},
-		Action: func(c *cli.Context) error {
-			if c.NArg() == 0 {
-				return cli.ShowAppHelp(c)
-			}
+	recursive := flag.Bool("r", false, "recursive size of directories")
+	recursiveLong := flag.Bool("recursive", false, "recursive size of directories")
+	human := flag.Bool("H", false, "human-readable sizes (auto-select unit)")
+	humanLong := flag.Bool("human", false, "human-readable sizes (auto-select unit)")
+	all := flag.Bool("a", false, "include hidden files and directories")
+	allLong := flag.Bool("all", false, "include hidden files and directories")
+	help := flag.Bool("h", false, "show help")
+	helpLong := flag.Bool("help", false, "show help")
 
-			path := c.Args().First()
-			result, err := code.GetPathSize(
-				path,
-				c.Bool("recursive"),
-				c.Bool("human"),
-				c.Bool("all"),
-			)
-			if err != nil {
-				return err
-			}
-
-			fmt.Println(result)
-			return nil
-		},
-		EnableBashCompletion: true,
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: %s [options] <path>\n\n", os.Args[0])
+		fmt.Fprintln(os.Stderr, "Options:")
+		fmt.Fprintln(os.Stderr, "  -r, --recursive    recursive size of directories")
+		fmt.Fprintln(os.Stderr, "  -H, --human        human-readable sizes (auto-select unit)")
+		fmt.Fprintln(os.Stderr, "  -a, --all          include hidden files and directories")
+		fmt.Fprintln(os.Stderr, "  -h, --help         show help")
+		fmt.Fprintln(os.Stderr, "\nExamples:")
+		fmt.Fprintln(os.Stderr, "  hexlet-path-size file.txt")
+		fmt.Fprintln(os.Stderr, "  hexlet-path-size -H file.txt")
+		fmt.Fprintln(os.Stderr, "  hexlet-path-size -r -a -H directory/")
 	}
 
-	app.CommandNotFound = func(c *cli.Context, command string) {
-		fmt.Fprintf(c.App.Writer, "No command '%s' found.\n", command)
-		cli.ShowAppHelp(c)
+	flag.Parse()
+
+	if *help || *helpLong {
+		flag.Usage()
+		os.Exit(0)
 	}
 
-	if err := app.Run(os.Args); err != nil {
-		log.Fatal(err)
+	args := flag.Args()
+	if len(args) == 0 {
+		fmt.Fprintln(os.Stderr, "Error: path is required")
+		flag.Usage()
+		os.Exit(1)
 	}
+
+	path := args[0]
+
+	isRecursive := *recursive || *recursiveLong
+	isHuman := *human || *humanLong
+	isAll := *all || *allLong
+
+	result, err := code.GetPathSizeWithPath(path, isRecursive, isHuman, isAll)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Println(result)
 }
