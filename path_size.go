@@ -9,6 +9,10 @@ import (
 	"strings"
 )
 
+func GetPathSize(path string, recursive, human, all bool) (string, error) {
+	return GetSize(path, recursive, human, all)
+}
+
 func GetSize(path string, recursive, human, all bool) (string, error) {
 	info, err := os.Lstat(path)
 	if err != nil {
