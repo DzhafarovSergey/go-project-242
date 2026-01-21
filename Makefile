@@ -16,8 +16,6 @@ test-coverage:
 	go test -v -coverprofile=coverage.out ./...
 	go tool cover -html=coverage.out -o coverage.html
 
-lint:
-	golangci-lint run
 
 clean:
 	rm -rf $(BINARY_DIR)/ coverage.out coverage.html
@@ -30,6 +28,6 @@ help:
 	@echo "  make run            - Run the application"
 	@echo "  make test           - Run tests"
 	@echo "  make test-coverage  - Run tests with coverage report"
-	@echo "  make lint           - Run linter"
+	@echo "  make lint           - Run linter via go run"
 	@echo "  make clean          - Clean build artifacts"
 	@echo "  make all            - Run lint, test, and build"
