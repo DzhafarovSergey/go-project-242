@@ -36,9 +36,6 @@ go build -o bin/hexlet-path-size ./cmd/hexlet-path-size
 
 ### Способ 2: Установка через go install
 
-```bash
-go install github.com/your-username/hexlet-path-size@latest
-```
 
 ## Использование
 
@@ -50,7 +47,7 @@ go install github.com/your-username/hexlet-path-size@latest
 
 | Флаг | Короткая версия | Описание |
 |------|----------------|----------|
-| `--human` | `-h` | Человекочитаемый формат (автовыбор единиц) |
+| `--human` | `-H` | Человекочитаемый формат (автовыбор единиц) |
 | `--all` | `-a` | Включать скрытые файлы и директории |
 | `--recursive` | `-r` | Рекурсивный подсчет для директорий |
 
@@ -127,27 +124,6 @@ go test -v ./tests/...
 
 # Проверка покрытия кода
 make test-coverage
-```
-
-## Структура проекта
-
-```
-.
-├── cmd/hexlet-path-size/     # Основная программа
-│   └── main.go
-├── internal/
-│   ├── cli/                  # Логика командной строки
-│   │   └── cli.go
-│   └── pathsize/             # Бизнес-логика
-│       └── pathsize.go
-├── tests/                    # Тесты
-│   ├── fixtures/            # Тестовые данные
-│   │   └── testdata/
-│   │       └── data/
-│   │           └── .keep
-│   └── path_size_test.go
-├── Makefile                  # Управление сборкой
-└── README.md
 ```
 
 ## Makefile команды

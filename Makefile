@@ -1,27 +1,47 @@
-.PHONY: build test lint clean
+.PHONY: build test lint clean all help
+
+BINARY_NAME=hexlet-path-size
+BINARY_DIR=bin
 
 build:
-	go build -o bin/hexlet-path-size ./cmd/hexlet-path-size
+	@echo "Building binary..."
+	go build -o $(BINARY_DIR)/$(BINARY_NAME) ./cmd/hexlet-path-size
+	@echo "Binary built: $(BINARY_DIR)/$(BINARY_NAME)"
+
+run:
+	@go run cmd/hexlet-path-size/main.go $(ARGS)
 
 test:
-	go test -v .
+	@echo "Running tests..."
+	go test -v -cover ./...
 
 test-coverage:
-	go test -coverprofile=coverage.out .
-	go tool cover -html=coverage.out
+	@echo "Running tests with coverage..."
+	go test -v -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report generated: coverage.html"
 
 lint:
+	@echo "Running linter..."
 	golangci-lint run
 
-run-example:
-	./bin/hexlet-path-size data.csv
-
-run-test-example:
-	./bin/hexlet-path-size data.csv
-	./bin/hexlet-path-size -h data.csv
-	./bin/hexlet-path-size -a .
-
 clean:
-	rm -rf bin/ coverage.out
+	@echo "Cleaning up..."
+	rm -rf $(BINARY_DIR)/ coverage.out coverage.html
 
-all: build test
+all: lint test build
+	@echo "All tasks completed successfully!"
+
+help:
+	@echo "Available commands:"
+	@echo "  make build          - Build the binary"
+	@echo "  make run            - Run the application (use ARGS='...' for arguments)"
+	@echo "  make test           - Run tests"
+	@echo "  make test-coverage  - Run tests with HTML coverage report"
+	@echo "  make lint           - Run linter"
+	@echo "  make clean          - Clean build artifacts"
+	@echo "  make all            - Run lint, test, and build"
+	@echo ""
+	@echo "Examples:"
+	@echo "  make run ARGS=\"-H file.txt\""
+	@echo "  make run ARGS=\"-raH ./directory\""

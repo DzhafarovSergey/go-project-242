@@ -1,57 +1,64 @@
 package main
 
 import (
-	"flag"
 	"fmt"
+	"log"
 	"os"
 
 	"code"
+
+	"github.com/urfave/cli/v2"
 )
 
 func main() {
-	Run()
-}
+	app := &cli.App{
+		Name:  "hexlet-path-size",
+		Usage: "print size of a file or directory; supports -r (recursive), -H (human-readable), -a (include hidden)",
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:    "recursive",
+				Aliases: []string{"r"},
+				Usage:   "recursive size of directories",
+			},
+			&cli.BoolFlag{
+				Name:    "human",
+				Aliases: []string{"H"},
+				Usage:   "human-readable sizes (auto-select unit)",
+			},
+			&cli.BoolFlag{
+				Name:    "all",
+				Aliases: []string{"a"},
+				Usage:   "include hidden files and directories",
+			},
+		},
+		Action: func(c *cli.Context) error {
+			if c.NArg() == 0 {
+				return cli.ShowAppHelp(c)
+			}
 
-func Run() {
-	humanFlag := flag.Bool("human", false, "human-readable sizes (auto-select unit)")
-	shortHumanFlag := flag.Bool("h", false, "human-readable sizes (shorthand)")
-	allFlag := flag.Bool("all", false, "include hidden files and directories")
-	shortAllFlag := flag.Bool("a", false, "include hidden files and directories (shorthand)")
-	recursiveFlag := flag.Bool("recursive", false, "recursive size of directories")
-	shortRecursiveFlag := flag.Bool("r", false, "recursive size of directories (shorthand)")
+			path := c.Args().First()
+			result, err := code.GetPathSize(
+				path,
+				c.Bool("recursive"),
+				c.Bool("human"),
+				c.Bool("all"),
+			)
+			if err != nil {
+				return err
+			}
 
-	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %s [options] <path>\n", os.Args[0])
-		fmt.Fprintln(os.Stderr, "Global options:")
-		flag.PrintDefaults()
-		fmt.Fprintln(os.Stderr, "\nExamples:")
-		fmt.Fprintln(os.Stderr, "  hexlet-path-size data.csv")
-		fmt.Fprintln(os.Stderr, "  hexlet-path-size --human data.csv")
-		fmt.Fprintln(os.Stderr, "  hexlet-path-size -h data.csv")
-		fmt.Fprintln(os.Stderr, "  hexlet-path-size --all project/")
-		fmt.Fprintln(os.Stderr, "  hexlet-path-size -a project/")
-		fmt.Fprintln(os.Stderr, "  hexlet-path-size -h -a project/")
-		fmt.Fprintln(os.Stderr, "  hexlet-path-size -h -a -r project/")
-		fmt.Fprintln(os.Stderr, "\nNote: Without -r flag, only top-level files are counted for directories.")
+			fmt.Println(result)
+			return nil
+		},
+		EnableBashCompletion: true,
 	}
 
-	flag.Parse()
-	if flag.NArg() < 1 {
-		flag.Usage()
-		os.Exit(1)
+	app.CommandNotFound = func(c *cli.Context, command string) {
+		fmt.Fprintf(c.App.Writer, "No command '%s' found.\n", command)
+		cli.ShowAppHelp(c)
 	}
 
-	path := flag.Arg(0)
-
-	human := *humanFlag || *shortHumanFlag
-	all := *allFlag || *shortAllFlag
-	recursive := *recursiveFlag || *shortRecursiveFlag
-
-	result, err := code.GetSize(path, recursive, human, all)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+	if err := app.Run(os.Args); err != nil {
+		log.Fatal(err)
 	}
-
-	fmt.Println(result)
 }

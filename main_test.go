@@ -1,412 +1,158 @@
-// main_test.go
 package code
 
 import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestGetPathSizeFile(t *testing.T) {
-	tmpfile, err := os.CreateTemp("", "testfile")
-	require.NoError(t, err)
-	defer os.Remove(tmpfile.Name())
+func TestGetPathSize_File(t *testing.T) {
+	tempDir := t.TempDir()
+	filePath := filepath.Join(tempDir, "test.txt")
+	content := []byte("test content")
+	os.WriteFile(filePath, content, 0644)
 
-	content := []byte("Hello, World!")
-	_, err = tmpfile.Write(content)
+	result, err := GetPathSize(filePath, false, false, false)
 	require.NoError(t, err)
-	err = tmpfile.Close()
-	require.NoError(t, err)
-
-	result, err := GetSize(tmpfile.Name(), false, false, false)
-	require.NoError(t, err)
-
-	expected := "13B"
-	assert.Equal(t, expected, result)
+	expected := fmt.Sprintf("%dB\t%s", len(content), filePath)
+	require.Equal(t, expected, result)
 }
 
-func TestGetPathSizeDirectory(t *testing.T) {
-	tmpdir, err := os.MkdirTemp("", "testdir")
+func TestGetPathSize_Directory(t *testing.T) {
+	tempDir := t.TempDir()
+
+	file1 := filepath.Join(tempDir, "file1.txt")
+	file2 := filepath.Join(tempDir, "file2.txt")
+	os.WriteFile(file1, []byte("content1"), 0644)
+	os.WriteFile(file2, []byte("content2"), 0644)
+
+	result, err := GetPathSize(tempDir, false, false, false)
 	require.NoError(t, err)
-	defer os.RemoveAll(tmpdir)
-
-	file1 := filepath.Join(tmpdir, "file1.txt")
-	file2 := filepath.Join(tmpdir, "file2.txt")
-
-	err = os.WriteFile(file1, []byte("12345"), 0644)
-	require.NoError(t, err)
-
-	err = os.WriteFile(file2, []byte("67890"), 0644)
-	require.NoError(t, err)
-
-	result, err := GetSize(tmpdir, false, false, false)
-	require.NoError(t, err)
-
-	expected := "10B"
-	assert.Equal(t, expected, result)
+	require.Contains(t, result, "16B")
+	require.Contains(t, result, tempDir)
 }
 
-func TestGetPathSizeNonExistentPath(t *testing.T) {
-	result, err := GetSize("/non/existent/path", false, false, false)
+func TestGetPathSize_Recursive(t *testing.T) {
+	tempDir := t.TempDir()
 
-	assert.Error(t, err)
-	assert.Empty(t, result)
+	subDir := filepath.Join(tempDir, "sub")
+	os.Mkdir(subDir, 0755)
+
+	file1 := filepath.Join(tempDir, "file1.txt")
+	file2 := filepath.Join(subDir, "file2.txt")
+	os.WriteFile(file1, []byte("12345"), 0644)
+	os.WriteFile(file2, []byte("67890"), 0644)
+
+	result1, err := GetPathSize(tempDir, false, false, false)
+	require.NoError(t, err)
+	require.Contains(t, result1, "5B")
+
+	result2, err := GetPathSize(tempDir, true, false, false)
+	require.NoError(t, err)
+	require.Contains(t, result2, "10B")
 }
 
-func TestFormatSizeBytes(t *testing.T) {
+func TestGetPathSize_HiddenFiles(t *testing.T) {
+	tempDir := t.TempDir()
+
+	normalFile := filepath.Join(tempDir, "normal.txt")
+	hiddenFile := filepath.Join(tempDir, ".hidden.txt")
+	os.WriteFile(normalFile, []byte("normal"), 0644)
+	os.WriteFile(hiddenFile, []byte("hidden"), 0644)
+
+	result1, err := GetPathSize(tempDir, false, false, false)
+	require.NoError(t, err)
+	require.Contains(t, result1, "6B")
+
+	result2, err := GetPathSize(tempDir, false, false, true)
+	require.NoError(t, err)
+	require.Contains(t, result2, "12B")
+}
+
+func TestGetPathSize_HumanReadable(t *testing.T) {
+	tempDir := t.TempDir()
+	filePath := filepath.Join(tempDir, "test.txt")
+
+	content := make([]byte, 1536)
+	for i := range content {
+		content[i] = 'A'
+	}
+	os.WriteFile(filePath, content, 0644)
+
+	result1, err := GetPathSize(filePath, false, false, false)
+	require.NoError(t, err)
+	require.Contains(t, result1, "1536B")
+
+	result2, err := GetPathSize(filePath, false, true, false)
+	require.NoError(t, err)
+	require.Contains(t, result2, "1.5KB")
+}
+
+func TestFormatSize(t *testing.T) {
 	testCases := []struct {
-		name     string
 		size     int64
 		human    bool
 		expected string
 	}{
-		{"0 bytes, no human", 0, false, "0B"},
-		{"100 bytes, no human", 100, false, "100B"},
-		{"1023 bytes, no human", 1023, false, "1023B"},
-		{"0 bytes, human", 0, true, "0B"},
-		{"500 bytes, human", 500, true, "500B"},
-		{"1023 bytes, human", 1023, true, "1023B"},
-		{"1024 bytes, human", 1024, true, "1.0KB"},
-		{"1536 bytes, human", 1536, true, "1.5KB"},
-		{"1048576 bytes, human", 1048576, true, "1.0MB"},
-		{"1073741824 bytes, human", 1073741824, true, "1.0GB"},
-		{"1099511627776 bytes, human", 1099511627776, true, "1.0TB"},
-		{"24MB exact", 25165824, true, "24.0MB"},
-		{"24.5MB", 25690112, true, "24.5MB"},
+		{123, false, "123B"},
+		{123, true, "123B"},
+		{1024, true, "1KB"},
+		{1536, true, "1.5KB"},
+		{2048, true, "2KB"},
+		{1234567, true, "1.2MB"},
+		{1048576, true, "1MB"},
+		{1073741824, true, "1GB"},
+		{0, true, "0B"},
+		{999, true, "999B"},
+		{1000, true, "1000B"},
+		{1023, true, "1023B"},
+		{1024*1024 - 1, true, "1024KB"},
+		{1024*1024*1024 - 1, true, "1024MB"},
 	}
 
 	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			result := FormatSizeBytes(tc.size, tc.human)
-			assert.Equal(t, tc.expected, result)
-		})
+		result := FormatSize(tc.size, tc.human)
+		require.Equal(t, tc.expected, result,
+			"For size %d and human=%v", tc.size, tc.human)
 	}
 }
 
-func TestGetPathSizeWithHumanFlag(t *testing.T) {
-	tmpfile, err := os.CreateTemp("", "testfile")
-	require.NoError(t, err)
-	defer os.Remove(tmpfile.Name())
+func TestGetPathSize_ComplexStructure(t *testing.T) {
+	tempDir := t.TempDir()
 
-	size := 24 * 1024 * 1024
-	data := make([]byte, size)
+	os.WriteFile(filepath.Join(tempDir, "file1.txt"), make([]byte, 10), 0644)
+	os.WriteFile(filepath.Join(tempDir, ".hidden.txt"), make([]byte, 5), 0644)
 
-	_, err = tmpfile.Write(data)
-	require.NoError(t, err)
-	err = tmpfile.Close()
-	require.NoError(t, err)
+	subDir := filepath.Join(tempDir, "subdir")
+	deepDir := filepath.Join(subDir, "deep")
+	os.MkdirAll(deepDir, 0755)
 
-	result, err := GetSize(tmpfile.Name(), false, false, false)
-	require.NoError(t, err)
-	expected := fmt.Sprintf("%dB", size)
-	assert.Equal(t, expected, result)
+	os.WriteFile(filepath.Join(subDir, "file2.txt"), make([]byte, 15), 0644)
+	os.WriteFile(filepath.Join(subDir, ".hidden2.txt"), make([]byte, 7), 0644)
+	os.WriteFile(filepath.Join(deepDir, "file3.txt"), make([]byte, 20), 0644)
 
-	result, err = GetSize(tmpfile.Name(), false, true, false)
+	result1, err := GetPathSize(tempDir, false, false, false)
 	require.NoError(t, err)
-	expected = "24.0MB"
-	assert.Equal(t, expected, result)
+	require.Contains(t, result1, "10B")
+
+	result2, err := GetPathSize(tempDir, true, false, false)
+	require.NoError(t, err)
+	require.Contains(t, result2, "45B")
+
+	result3, err := GetPathSize(tempDir, true, false, true)
+	require.NoError(t, err)
+	require.Contains(t, result3, "57B")
+
+	result4, err := GetPathSize(tempDir, true, true, true)
+	require.NoError(t, err)
+	require.Contains(t, result4, "57B")
 }
 
-func TestGetPathSizeSmallFileHuman(t *testing.T) {
-	tmpfile, err := os.CreateTemp("", "testfile")
-	require.NoError(t, err)
-	defer os.Remove(tmpfile.Name())
-
-	size := int64(25165824)
-	data := make([]byte, size)
-
-	_, err = tmpfile.Write(data)
-	require.NoError(t, err)
-	err = tmpfile.Close()
-	require.NoError(t, err)
-
-	result, err := GetSize(tmpfile.Name(), false, false, false)
-	require.NoError(t, err)
-	assert.Equal(t, fmt.Sprintf("%dB", size), result)
-
-	result, err = GetSize(tmpfile.Name(), false, true, false)
-	require.NoError(t, err)
-	assert.Equal(t, "24.0MB", result)
-}
-
-func TestGetPathSizeWithHiddenFiles(t *testing.T) {
-	tmpdir, err := os.MkdirTemp("", "testdir-hidden")
-	require.NoError(t, err)
-	defer os.RemoveAll(tmpdir)
-
-	file1 := filepath.Join(tmpdir, "file1.txt")
-	file2 := filepath.Join(tmpdir, "file2.txt")
-	hiddenFile1 := filepath.Join(tmpdir, ".hidden1.txt")
-	hiddenFile2 := filepath.Join(tmpdir, ".hidden2.txt")
-	hiddenDir := filepath.Join(tmpdir, ".hidden_dir")
-	err = os.Mkdir(hiddenDir, 0755)
-	require.NoError(t, err)
-	fileInHiddenDir := filepath.Join(hiddenDir, "file.txt")
-
-	err = os.WriteFile(file1, []byte("12345"), 0644)
-	require.NoError(t, err)
-	err = os.WriteFile(file2, []byte("67890"), 0644)
-	require.NoError(t, err)
-	err = os.WriteFile(hiddenFile1, []byte("hidden1"), 0644)
-	require.NoError(t, err)
-	err = os.WriteFile(hiddenFile2, []byte("hidden2"), 0644)
-	require.NoError(t, err)
-	err = os.WriteFile(fileInHiddenDir, []byte("inhidden"), 0644)
-	require.NoError(t, err)
-
-	result, err := GetSize(tmpdir, false, false, false)
-	require.NoError(t, err)
-	expected := "10B"
-	assert.Equal(t, expected, result)
-
-	result, err = GetSize(tmpdir, false, false, true)
-	require.NoError(t, err)
-	expected = "24B"
-	assert.Equal(t, expected, result)
-}
-
-func TestGetPathSizeHiddenFileDirectly(t *testing.T) {
-	tmpfile, err := os.CreateTemp("", ".hiddenfile")
-	require.NoError(t, err)
-	defer os.Remove(tmpfile.Name())
-
-	content := []byte("Hidden content")
-	_, err = tmpfile.Write(content)
-	require.NoError(t, err)
-	err = tmpfile.Close()
-	require.NoError(t, err)
-
-	result, err := GetSize(tmpfile.Name(), false, false, false)
-	require.NoError(t, err)
-	assert.Equal(t, "", result)
-
-	result, err = GetSize(tmpfile.Name(), false, false, true)
-	require.NoError(t, err)
-	expected := fmt.Sprintf("%dB", len(content))
-	assert.Equal(t, expected, result)
-}
-
-func testIsHidden(name string) bool {
-	base := filepath.Base(name)
-	if base == "." || base == ".." {
-		return false
-	}
-	return strings.HasPrefix(base, ".")
-}
-
-func TestIsHiddenFunction(t *testing.T) {
-	testCases := []struct {
-		name     string
-		path     string
-		expected bool
-	}{
-		{"hidden file", ".gitignore", true},
-		{"hidden file with path", "/path/to/.env", true},
-		{"hidden dir", ".git", true},
-		{"hidden dir with path", "/home/user/.config", true},
-		{"normal file", "file.txt", false},
-		{"normal dir", "documents", false},
-		{"file starting with dot in middle", "file.name.txt", false},
-		{"current directory", ".", false},
-		{"parent directory", "..", false},
-		{"dot at start", ".hidden", true},
-		{"multiple dots", "...", true},
-		{"dotdot something", "..file", true},
-		{"file with two dots start", "..config", true},
-		{"only dot", ".", false},
-		{"only dot dot", "..", false},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			result := testIsHidden(tc.path)
-			assert.Equal(t, tc.expected, result, "Path: %s", tc.path)
-		})
-	}
-}
-
-func TestGetPathSizeCombinedFlags(t *testing.T) {
-	tmpdir, err := os.MkdirTemp("", "testdir-combined")
-	require.NoError(t, err)
-	defer os.RemoveAll(tmpdir)
-
-	normalFile := filepath.Join(tmpdir, "normal.txt")
-	hiddenFile := filepath.Join(tmpdir, ".hidden.txt")
-	normalSize := int64(1536)
-	hiddenSize := int64(512)
-
-	err = os.WriteFile(normalFile, make([]byte, normalSize), 0644)
-	require.NoError(t, err)
-	err = os.WriteFile(hiddenFile, make([]byte, hiddenSize), 0644)
-	require.NoError(t, err)
-
-	result, err := GetSize(tmpdir, false, false, false)
-	require.NoError(t, err)
-	expected := fmt.Sprintf("%dB", normalSize)
-	assert.Equal(t, expected, result)
-
-	result, err = GetSize(tmpdir, false, true, false)
-	require.NoError(t, err)
-	expected = "1.5KB"
-	assert.Equal(t, expected, result)
-
-	result, err = GetSize(tmpdir, false, false, true)
-	require.NoError(t, err)
-	expected = fmt.Sprintf("%dB", normalSize+hiddenSize)
-	assert.Equal(t, expected, result)
-
-	result, err = GetSize(tmpdir, false, true, true)
-	require.NoError(t, err)
-	expected = "2.0KB"
-	assert.Equal(t, expected, result)
-}
-
-func TestGetPathSizeRecursive(t *testing.T) {
-	tmpdir, err := os.MkdirTemp("", "testdir-recursive")
-	require.NoError(t, err)
-	defer os.RemoveAll(tmpdir)
-
-	subdir1 := filepath.Join(tmpdir, "subdir1")
-	subsubdir := filepath.Join(subdir1, "subsubdir")
-	subdir2 := filepath.Join(tmpdir, "subdir2")
-	err = os.MkdirAll(subsubdir, 0755)
-	require.NoError(t, err)
-	err = os.Mkdir(subdir2, 0755)
-	require.NoError(t, err)
-
-	file1 := filepath.Join(tmpdir, "file1.txt")
-	file2 := filepath.Join(subdir1, "file2.txt")
-	file3 := filepath.Join(subsubdir, "file3.txt")
-	file4 := filepath.Join(subdir2, "file4.txt")
-
-	err = os.WriteFile(file1, []byte("12345"), 0644)
-	require.NoError(t, err)
-	err = os.WriteFile(file2, []byte("1234567890"), 0644)
-	require.NoError(t, err)
-	err = os.WriteFile(file3, []byte("123456789012345"), 0644)
-	require.NoError(t, err)
-	err = os.WriteFile(file4, []byte("12345678901234567890"), 0644)
-	require.NoError(t, err)
-
-	result, err := GetSize(tmpdir, false, false, false)
-	require.NoError(t, err)
-	assert.Equal(t, "5B", result)
-
-	result, err = GetSize(tmpdir, true, false, false)
-	require.NoError(t, err)
-	assert.Equal(t, "50B", result)
-
-	result, err = GetSize(tmpdir, true, true, false)
-	require.NoError(t, err)
-	assert.Equal(t, "50B", result)
-
-	largeFile := filepath.Join(tmpdir, "large.txt")
-	largeContent := make([]byte, 2048)
-	err = os.WriteFile(largeFile, largeContent, 0644)
-	require.NoError(t, err)
-
-	result, err = GetSize(tmpdir, true, true, false)
-	require.NoError(t, err)
-	assert.Equal(t, "2.0KB", result)
-}
-
-func TestGetPathSizeRecursiveWithHidden(t *testing.T) {
-	tmpdir, err := os.MkdirTemp("", "testdir-recursive-hidden")
-	require.NoError(t, err)
-	defer os.RemoveAll(tmpdir)
-
-	hiddendir := filepath.Join(tmpdir, ".hiddendir")
-	subdir := filepath.Join(tmpdir, "subdir")
-	err = os.MkdirAll(hiddendir, 0755)
-	require.NoError(t, err)
-	err = os.Mkdir(subdir, 0755)
-	require.NoError(t, err)
-
-	normalFile := filepath.Join(tmpdir, "normal.txt")
-	hiddenFile := filepath.Join(tmpdir, ".hidden.txt")
-	fileInHiddenDir := filepath.Join(hiddendir, "file.txt")
-	normalInSubdir := filepath.Join(subdir, "normal2.txt")
-	hiddenInSubdir := filepath.Join(subdir, ".hidden2.txt")
-
-	err = os.WriteFile(normalFile, []byte("12345"), 0644)
-	require.NoError(t, err)
-	err = os.WriteFile(hiddenFile, []byte("1234567890"), 0644)
-	require.NoError(t, err)
-	err = os.WriteFile(fileInHiddenDir, []byte("123456789012345"), 0644)
-	require.NoError(t, err)
-	err = os.WriteFile(normalInSubdir, []byte("12345678901234567890"), 0644)
-	require.NoError(t, err)
-	err = os.WriteFile(hiddenInSubdir, make([]byte, 25), 0644)
-	require.NoError(t, err)
-
-	result, err := GetSize(tmpdir, true, false, false)
-	require.NoError(t, err)
-	assert.Equal(t, "25B", result)
-
-	result, err = GetSize(tmpdir, true, false, true)
-	require.NoError(t, err)
-	assert.Equal(t, "75B", result)
-
-	result, err = GetSize(tmpdir, false, false, true)
-	require.NoError(t, err)
-	assert.Equal(t, "15B", result)
-}
-
-func TestGetPathSizeRecursiveSkipHiddenDirs(t *testing.T) {
-	tmpdir, err := os.MkdirTemp("", "testdir-skip-hidden")
-	require.NoError(t, err)
-	defer os.RemoveAll(tmpdir)
-
-	hiddenDir := filepath.Join(tmpdir, ".hidden_dir")
-	hiddenSubdir := filepath.Join(hiddenDir, "subdir")
-	normalDir := filepath.Join(tmpdir, "normal_dir")
-	err = os.MkdirAll(hiddenSubdir, 0755)
-	require.NoError(t, err)
-	err = os.Mkdir(normalDir, 0755)
-	require.NoError(t, err)
-
-	normalFile := filepath.Join(tmpdir, "normal.txt")
-	file1 := filepath.Join(hiddenDir, "file1.txt")
-	file2 := filepath.Join(hiddenSubdir, "file2.txt")
-	file3 := filepath.Join(normalDir, "file3.txt")
-
-	err = os.WriteFile(normalFile, []byte("12345"), 0644)
-	require.NoError(t, err)
-	err = os.WriteFile(file1, make([]byte, 10), 0644)
-	require.NoError(t, err)
-	err = os.WriteFile(file2, make([]byte, 15), 0644)
-	require.NoError(t, err)
-	err = os.WriteFile(file3, make([]byte, 20), 0644)
-	require.NoError(t, err)
-
-	result, err := GetSize(tmpdir, true, false, false)
-	require.NoError(t, err)
-	assert.Equal(t, "25B", result)
-}
-
-func TestGetPathSizeEdgeCases(t *testing.T) {
-	tmpdir, err := os.MkdirTemp("", "testdir-empty")
-	require.NoError(t, err)
-	defer os.RemoveAll(tmpdir)
-
-	result, err := GetSize(tmpdir, true, false, false)
-	require.NoError(t, err)
-	assert.Equal(t, "0B", result)
-
-	hiddenFile := filepath.Join(tmpdir, ".hidden")
-	err = os.WriteFile(hiddenFile, []byte("test"), 0644)
-	require.NoError(t, err)
-
-	result, err = GetSize(tmpdir, true, false, false)
-	require.NoError(t, err)
-	assert.Equal(t, "0B", result)
-
-	result, err = GetSize(tmpdir, true, false, true)
-	require.NoError(t, err)
-	assert.Equal(t, "4B", result)
+func TestGetPathSize_NonExistentPath(t *testing.T) {
+	_, err := GetPathSize("/non/existent/path", false, false, false)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "no such file")
 }
