@@ -8,6 +8,31 @@ import (
 	"strings"
 )
 
+func GetSize(path string, recursive, human, all bool) (string, error) {
+	info, err := os.Lstat(path)
+	if err != nil {
+		return "", err
+	}
+
+	var size int64
+	if info.IsDir() {
+		size, err = getDirSize(path, recursive, all)
+		if err != nil {
+			return "", err
+		}
+	} else {
+		if !all && isHidden(path) {
+			return "", nil
+		}
+		size = info.Size()
+	}
+
+	if !human {
+		return fmt.Sprintf("%dB", size), nil
+	}
+	return FormatSizeBytes(size, true), nil
+}
+
 func GetPathSize(path string, recursive, human, all bool) (string, error) {
 	info, err := os.Lstat(path)
 	if err != nil {

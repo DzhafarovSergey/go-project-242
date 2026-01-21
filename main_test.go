@@ -78,7 +78,7 @@ func TestFormatSizeBytes(t *testing.T) {
 		{"1099511627776 bytes, human", 1099511627776, true, "1TB"},
 
 		{"24MB exact", 25165824, true, "24MB"},
-		{"24.0MB", 25165824, true, "24MB"}, // Без .0
+		{"24.0MB", 25165824, true, "24MB"},
 		{"24.5MB", 25690112, true, "24.5MB"},
 	}
 
@@ -175,7 +175,6 @@ func TestGetPathSizeWithHiddenFiles(t *testing.T) {
 
 	result, err = GetPathSize(tmpdir, false, false, true)
 	require.NoError(t, err)
-
 	expected = "24B\t" + tmpdir
 	assert.Equal(t, expected, result)
 }
@@ -274,7 +273,6 @@ func TestGetPathSizeCombinedFlags(t *testing.T) {
 
 	result, err = GetPathSize(tmpdir, false, true, true)
 	require.NoError(t, err)
-
 	expected = fmt.Sprintf("2KB\t%s", tmpdir)
 	assert.Equal(t, expected, result)
 }
@@ -360,17 +358,14 @@ func TestGetPathSizeRecursiveWithHidden(t *testing.T) {
 
 	result, err := GetPathSize(tmpdir, true, false, false)
 	require.NoError(t, err)
-
 	assert.Equal(t, "25B\t"+tmpdir, result)
 
 	result, err = GetPathSize(tmpdir, true, false, true)
 	require.NoError(t, err)
-
 	assert.Equal(t, "75B\t"+tmpdir, result)
 
 	result, err = GetPathSize(tmpdir, false, false, true)
 	require.NoError(t, err)
-
 	assert.Equal(t, "15B\t"+tmpdir, result)
 }
 
@@ -404,7 +399,6 @@ func TestGetPathSizeRecursiveSkipHiddenDirs(t *testing.T) {
 
 	result, err := GetPathSize(tmpdir, true, false, false)
 	require.NoError(t, err)
-
 	assert.Equal(t, "25B\t"+tmpdir, result)
 }
 
