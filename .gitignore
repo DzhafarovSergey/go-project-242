@@ -1,0 +1,7 @@
+/bin/*
+!bin/.keep
+
+tests/fixtures/testdata/data/*
+!tests/fixtures/testdata/data/.keep
+data.csv
+demo.cast
