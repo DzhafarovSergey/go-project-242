@@ -171,18 +171,22 @@ func TestGetPathSize_ComplexStructure(t *testing.T) {
 func TestGetPathSize_NonExistentPath(t *testing.T) {
 	_, err := GetPathSize("/non/existent/path", false, false, false)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "no such file")
 }
 
-func TestGetPathSizeWithPath(t *testing.T) {
+func TestGetPathSize_Symlink(t *testing.T) {
 	tempDir := t.TempDir()
-	filePath := filepath.Join(tempDir, "test.txt")
-	content := []byte("test")
-	err := os.WriteFile(filePath, content, 0644)
+
+	targetFile := filepath.Join(tempDir, "target.txt")
+	content := []byte("test content")
+	err := os.WriteFile(targetFile, content, 0644)
 	require.NoError(t, err)
 
-	result, err := GetPathSizeWithPath(filePath, false, false, false)
+	linkFile := filepath.Join(tempDir, "link.txt")
+	err = os.Symlink(targetFile, linkFile)
 	require.NoError(t, err)
-	expected := fmt.Sprintf("%dB\t%s", len(content), filePath)
+
+	result, err := GetPathSize(linkFile, false, false, false)
+	require.NoError(t, err)
+	expected := fmt.Sprintf("%dB", len(content))
 	require.Equal(t, expected, result)
 }

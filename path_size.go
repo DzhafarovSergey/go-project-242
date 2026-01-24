@@ -5,6 +5,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func GetPathSize(path string, recursive, human, all bool) (string, error) {
@@ -19,16 +20,8 @@ func GetPathSize(path string, recursive, human, all bool) (string, error) {
 	return fmt.Sprintf("%dB", size), nil
 }
 
-func GetPathSizeWithPath(path string, recursive, human, all bool) (string, error) {
-	sizeStr, err := GetPathSize(path, recursive, human, all)
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("%s\t%s", sizeStr, path), nil
-}
-
 func calculateSize(path string, recursive, all bool) (int64, error) {
-	info, err := os.Lstat(path)
+	info, err := os.Stat(path)
 	if err != nil {
 		return 0, err
 	}
@@ -46,13 +39,12 @@ func calculateSize(path string, recursive, all bool) (int64, error) {
 
 	for _, entry := range entries {
 		entryName := entry.Name()
-
-		if !all && len(entryName) > 0 && entryName[0] == '.' {
+		if !all && strings.HasPrefix(entryName, ".") {
 			continue
 		}
 
 		fullPath := filepath.Join(path, entryName)
-		entryInfo, err := os.Lstat(fullPath)
+		entryInfo, err := os.Stat(fullPath)
 		if err != nil {
 			continue
 		}
@@ -75,7 +67,7 @@ func FormatSize(size int64, human bool) string {
 		return fmt.Sprintf("%dB", size)
 	}
 
-	units := []string{"B", "KB", "MB", "GB", "TB", "PB", "EB"}
+	units := NewUnits()
 	if size == 0 {
 		return "0B"
 	}
