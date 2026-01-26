@@ -2,7 +2,6 @@ package code
 
 import (
 	"fmt"
-	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,7 +14,7 @@ func GetPathSize(path string, recursive, human, all bool) (string, error) {
 	}
 
 	if human {
-		return FormatSize(size, true), nil
+		return formatSizeHuman(size), nil
 	}
 	return fmt.Sprintf("%dB", size), nil
 }
@@ -44,17 +43,17 @@ func calculateSize(path string, recursive, all bool) (int64, error) {
 		}
 
 		fullPath := filepath.Join(path, entryName)
-		entryInfo, err := os.Stat(fullPath)
-		if err != nil {
-			continue
-		}
 
-		if entryInfo.IsDir() && recursive {
+		if entry.IsDir() && recursive {
 			subDirSize, err := calculateSize(fullPath, recursive, all)
 			if err == nil {
 				totalSize += subDirSize
 			}
-		} else if !entryInfo.IsDir() {
+		} else if !entry.IsDir() {
+			entryInfo, err := entry.Info()
+			if err != nil {
+				continue
+			}
 			totalSize += entryInfo.Size()
 		}
 	}
@@ -62,32 +61,50 @@ func calculateSize(path string, recursive, all bool) (int64, error) {
 	return totalSize, nil
 }
 
-func FormatSize(size int64, human bool) string {
-	if !human {
-		return fmt.Sprintf("%dB", size)
-	}
-
-	units := NewUnits()
+func formatSizeHuman(size int64) string {
 	if size == 0 {
 		return "0B"
 	}
 
-	base := 1024.0
-	exp := int(math.Log(float64(size)) / math.Log(base))
-	if exp >= len(units) {
-		exp = len(units) - 1
+	const (
+		_  = iota
+		KB = 1 << (10 * iota)
+		MB
+		GB
+		TB
+		PB
+		EB
+	)
+
+	var value float64
+	var unit string
+
+	switch {
+	case size >= EB:
+		value = float64(size) / float64(EB)
+		unit = "EB"
+	case size >= PB:
+		value = float64(size) / float64(PB)
+		unit = "PB"
+	case size >= TB:
+		value = float64(size) / float64(TB)
+		unit = "TB"
+	case size >= GB:
+		value = float64(size) / float64(GB)
+		unit = "GB"
+	case size >= MB:
+		value = float64(size) / float64(MB)
+		unit = "MB"
+	case size >= KB:
+		value = float64(size) / float64(KB)
+		unit = "KB"
+	default:
+		return fmt.Sprintf("%dB", size)
 	}
 
-	value := float64(size) / math.Pow(base, float64(exp))
+	if value == float64(int64(value)) {
+		return fmt.Sprintf("%d%s", int64(value), unit)
+	}
 
-	if exp == 0 {
-		return fmt.Sprintf("%d%s", size, units[exp])
-	}
-	if value == math.Trunc(value) {
-		return fmt.Sprintf("%.1f%s", value, units[exp])
-	}
-	if value < 10 {
-		return fmt.Sprintf("%.1f%s", value, units[exp])
-	}
-	return fmt.Sprintf("%.0f%s", math.Round(value), units[exp])
+	return fmt.Sprintf("%.1f%s", value, unit)
 }

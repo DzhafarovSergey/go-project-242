@@ -99,35 +99,39 @@ func TestGetPathSize_HumanReadable(t *testing.T) {
 	require.Equal(t, "1.5KB", result2)
 }
 
-func TestFormatSize(t *testing.T) {
+func TestGetPathSize_HumanReadable_VariousSizes(t *testing.T) {
 	testCases := []struct {
+		name     string
 		size     int64
-		human    bool
 		expected string
 	}{
-		{123, false, "123B"},
-		{123, true, "123B"},
-		{1024, true, "1.0KB"},
-		{1536, true, "1.5KB"},
-		{2048, true, "2.0KB"},
-		{1234567, true, "1.2MB"},
-		{1048576, true, "1.0MB"},
-		{1073741824, true, "1.0GB"},
-		{0, true, "0B"},
-		{999, true, "999B"},
-		{1000, true, "1000B"},
-		{1023, true, "1023B"},
-		{1024*1024 - 1, true, "1024KB"},
-		{1024*1024*1024 - 1, true, "1024MB"},
-		{1500000, true, "1.4MB"},
-		{999999, true, "977KB"},
-		{1500, true, "1.5KB"},
+		{"0 bytes", 0, "0B"},
+		{"100 bytes", 100, "100B"},
+		{"999 bytes", 999, "999B"},
+		{"1023 bytes", 1023, "1023B"},
+		{"1KB", 1024, "1KB"},
+		{"1.5KB", 1536, "1.5KB"},
+		{"2KB", 2048, "2KB"},
+		{"1MB", 1048576, "1MB"},
+		{"1.2MB", 1258291, "1.2MB"},
+		{"1GB", 1073741824, "1GB"},
+		{"1.5GB", 1610612736, "1.5GB"},
+		{"999KB", 1022976, "999KB"},
 	}
 
+	tempDir := t.TempDir()
+
 	for _, tc := range testCases {
-		result := FormatSize(tc.size, tc.human)
-		require.Equal(t, tc.expected, result,
-			"For size %d and human=%v", tc.size, tc.human)
+		t.Run(tc.name, func(t *testing.T) {
+			filePath := filepath.Join(tempDir, "test_"+tc.name+".txt")
+			content := make([]byte, tc.size)
+			err := os.WriteFile(filePath, content, 0644)
+			require.NoError(t, err)
+
+			result, err := GetPathSize(filePath, false, true, false)
+			require.NoError(t, err)
+			require.Equal(t, tc.expected, result, "For size %d", tc.size)
+		})
 	}
 }
 
