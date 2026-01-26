@@ -76,35 +76,20 @@ func formatSizeHuman(size int64) string {
 		EB
 	)
 
-	var value float64
-	var unit string
-
 	switch {
 	case size >= EB:
-		value = float64(size) / float64(EB)
-		unit = "EB"
+		return fmt.Sprintf("%.1fEB", float64(size)/float64(EB))
 	case size >= PB:
-		value = float64(size) / float64(PB)
-		unit = "PB"
+		return fmt.Sprintf("%.1fPB", float64(size)/float64(PB))
 	case size >= TB:
-		value = float64(size) / float64(TB)
-		unit = "TB"
+		return fmt.Sprintf("%.1fTB", float64(size)/float64(TB))
 	case size >= GB:
-		value = float64(size) / float64(GB)
-		unit = "GB"
+		return fmt.Sprintf("%.1fGB", float64(size)/float64(GB))
 	case size >= MB:
-		value = float64(size) / float64(MB)
-		unit = "MB"
+		return fmt.Sprintf("%.1fMB", float64(size)/float64(MB))
 	case size >= KB:
-		value = float64(size) / float64(KB)
-		unit = "KB"
+		return fmt.Sprintf("%.1fKB", float64(size)/float64(KB))
 	default:
 		return fmt.Sprintf("%dB", size)
 	}
-
-	if value == float64(int64(value)) {
-		return fmt.Sprintf("%d%s", int64(value), unit)
-	}
-
-	return fmt.Sprintf("%.1f%s", value, unit)
 }
